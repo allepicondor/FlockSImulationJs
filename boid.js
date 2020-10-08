@@ -1,3 +1,6 @@
+
+
+
 class Boid {
     constructor() {
         this.position = createVector(random(width),random(height));
@@ -6,7 +9,7 @@ class Boid {
         this.acceleration = createVector();
         this.maxForce = 1;
         this.maxSpeed = 4;
-        this.r = 3
+        this.r = 4
         
     }
 
@@ -23,15 +26,22 @@ class Boid {
         }
     }
     align(points) {
-        let perceptionRadius = AlignViewDistanceSlider.value();
+        let perceptionRadiusAlign = AlignViewDistanceSlider.value();
+        let perceptionRadiusCohesion = cohesionDistanceSlider.value();
         let steering = createVector();
         let total = 0;
+        let steeringPos = createVector();
+        let totalPos = 0;
         for (let point of points){
             let other = point.userData;
             let d = dist(this.position.x, this.position.y,other.position.x,other.position.y);
-            if (d < perceptionRadius && other != this) {
+            if (d < perceptionRadiusAlign && other != this) {
                 steering.add(other.velocity);
                 total++;
+            }
+            if (d < perceptionRadiusCohesion && other != this){
+                steeringPos.add(other.position);
+                totalPos++;
             }
         }
         if (total > 0){
@@ -39,18 +49,29 @@ class Boid {
             steering.setMag(this.maxSpeed)
             steering.sub(this.velocity)
             steering.limit(this.maxForce)
+            steering.mult(alignSlider.value());
         }
-        return steering
+        if (totalPos > 0){
+            steeringPos.div(totalPos);
+            steeringPos.sub(this.position)
+            steeringPos.setMag(this.maxSpeed)
+            steeringPos.sub(this.velocity)
+            steeringPos.limit(this.maxForce)
+            steeringPos.mult(cohesionSlider.value());
+        }
+        return steering.add(steeringPos)
     }
     seperation(points) {
         let perceptionRadius = separationDistanceSlider.value();
         let steering = createVector();
         let total = 0;
+        let diff  = p5.Vector;
+        let d = 0
         for (let point of points){
             let other = point.userData;
-            let d = dist(this.position.x, this.position.y,other.position.x,other.position.y);
+            d = dist(this.position.x, this.position.y,other.position.x,other.position.y);
             if (d < perceptionRadius && other != this) {
-                let diff = p5.Vector.sub(this.position, other.position);
+                diff = p5.Vector.sub(this.position, other.position);
                 diff.div(d * d)
                 steering.add(diff);
                 total++;
@@ -58,27 +79,48 @@ class Boid {
         }
         //run walls or not
         if (AvoidWalls.checked()){
-            let d = dist(this.position.x, this.position.y, width, this.position.y);
-            let diff = p5.Vector.sub(this.position,createVector(width,this.position.y));
-            diff.div(d * d)
-            steering.add(diff);
-            total++;
+            d = dist(this.position.x, this.position.y, width, this.position.y);
+            if (d<perceptionRadius){
+                diff = p5.Vector.sub(this.position,createVector(width,this.position.y));
+                diff.div(d*(d/10))
+                steering.add(diff);
+                total++;
+            }
             d = dist(this.position.x, this.position.y, 0, this.position.y);
-            diff = p5.Vector.sub(this.position,createVector(0,this.position.y));
-            diff.div(d * d)
-            steering.add(diff);
-            total++;
+            if (d<perceptionRadius){
+                diff = p5.Vector.sub(this.position,createVector(0,this.position.y));
+                diff.div(d*(d/10))
+                steering.add(diff);
+                total++;
+            }
             d = dist(this.position.x, this.position.y, this.position.x, height);
-            diff = p5.Vector.sub(this.position,createVector(this.position.x,height));
-            diff.div(d * d)
-            steering.add(diff);
-            total++;
+            if (d<perceptionRadius){
+                diff = p5.Vector.sub(this.position,createVector(this.position.x,height));
+                diff.div(d*(d/10))
+                steering.add(diff);
+                total++;
+            }
             d = dist(this.position.x, this.position.y, this.position.x, 0);
-            diff = p5.Vector.sub(this.position,createVector(this.position.x,0));
-            diff.div(d * d)
-            steering.add(diff);
-            total++;
+            if (d<perceptionRadius){
+                diff = p5.Vector.sub(this.position,createVector(this.position.x,0));
+                diff.div(d*(d/10))
+                steering.add(diff);
+                total++;
+            }
         }
+        if (obstacles.length > 0){
+            for (let obstacle of obstacles){
+                
+                let d = dist(this.position.x, this.position.y, obstacle[0], obstacle[1]);
+                if (d<perceptionRadius+obstacle[2]+50){
+                    let diff = p5.Vector.sub(this.position,createVector(obstacle[0], obstacle[1]));
+                    diff.div(d*(d/30))
+                    steering.add(diff);
+                    total++;
+                }
+            }
+        }
+
         if (AvoidMouse.checked()){
             if (mouseIsPressed) {
                 d = dist(this.position.x, this.position.y, mouseX, mouseY);
@@ -131,8 +173,7 @@ class Boid {
     flock(qtree) {
         let range = new Circle(this.position.x,this.position.y,100)
         let points = qtree.query(range)
-        let alignment = this.align(points);
-        let cohesion = this.cohesion(points);
+        let alignment_cohesion = this.align(points);
         let seperation = this.seperation(points);
         if (FollowMouse.checked()){
             if (mouseIsPressed) {
@@ -143,11 +184,8 @@ class Boid {
         }
 
         seperation.mult(separationSlider.value());
-        cohesion.mult(cohesionSlider.value());
-        alignment.mult(alignSlider.value());
 
-        this.acceleration.add(alignment)
-        this.acceleration.add(cohesion)
+        this.acceleration.add(alignment_cohesion)
         this.acceleration.add(seperation)
 
     }
