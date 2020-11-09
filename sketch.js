@@ -9,10 +9,10 @@ let r = 0
 let indexOfMakingObstacle = -1
 
 function setup(){
-    createCanvas(900, 600)
+    createCanvas(1200, 800)
     alignlabel = createDiv('Align Strength');
     alignlabel.position(10,height + 10);  
-    alignSlider = createSlider(0,5,1,0.1);
+    alignSlider = createSlider(0,3,1,0.01);
     alignSlider.parent(alignlabel);
 
     AlignViewDistancelabel = createDiv('AlignViewDistance');
@@ -25,7 +25,7 @@ function setup(){
 
     cohesionlabel = createDiv('Cohesion Strength');
     cohesionlabel.position(10,height + 60);  
-    cohesionSlider = createSlider(0,5,1,0.1);
+    cohesionSlider = createSlider(0,3,1,0.01);
     cohesionSlider.parent(cohesionlabel);
 
     cohesionDistancelabel = createDiv('cohesionViewDistance');
@@ -35,7 +35,7 @@ function setup(){
 
     separationlabel = createDiv('Separation Strength');
     separationlabel.position(10,height + 110);  
-    separationSlider = createSlider(0,5,1.2,0.05);
+    separationSlider = createSlider(0,3,1.2,0.01);
     separationSlider.parent(separationlabel);
 
     separationDistancelabel = createDiv('separationViewDistance');
